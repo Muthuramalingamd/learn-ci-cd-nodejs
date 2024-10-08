@@ -53,4 +53,4 @@ jobs:
 
       - name: Update ECS Service
         run: |
-          aws ecs update-service --cluster nodespace --service DepService --force-new-deployment
+          aws ecs update-service --cluster nodespace --service HelloDjio --force-new-deployment
