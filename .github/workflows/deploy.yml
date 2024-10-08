@@ -34,11 +34,11 @@ jobs:
 
       - name: Tag Docker image
         run: |
-          docker tag my-node-app:latest 225989376232.dkr.ecr.us-east-1.amazonaws.com/my-node-app:latest
+          docker tag my-node-app:latest 225989376232.dkr.ecr.us-east-1.amazonaws.com/demoserv/demoserv:latest
 
       - name: Push Docker image to ECR
         run: |
-          docker push 225989376232.dkr.ecr.us-east-1.amazonaws.com/my-node-app:latest
+          docker push 225989376232.dkr.ecr.us-east-1.amazonaws.com/demoserv/demoserv:latest
 
   deploy:
     runs-on: ubuntu-latest
