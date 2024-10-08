@@ -1,4 +1,4 @@
-name: Deploy to AWS ECS
+name: CI/CD Pipeline
 
 on:
   push:
@@ -6,51 +6,47 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
-      - name: Set up JDK
-        uses: actions/setup-java@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
         with:
-          java-version: '17'
-          distribution: 'temurin'  # or 'temurin', 'zulu', etc.
-          java-package: 'jdk'
-          check-latest: false
-          server-id: 'github'
-          server-username: 'GITHUB_ACTOR'
-          server-password: 'GITHUB_TOKEN'
-          overwrite-settings: true
-          job-status: 'success'
-          token: ${{ secrets.GITHUB_TOKEN }}  # Ensure to use correct secret
+          node-version: "14"
 
-      - name: Build the project
-        run: ./mvnw package # or `mvn package` if you have Maven installed
-
-      - name: Log in to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1.0.0
+      - name: Install dependencies
+        run: npm install
 
       - name: Build Docker image
-        run: docker build -t empapp .
+        run: |
+          docker build -t my-node-app .
+
+      - name: Log in to Amazon ECR
+        run: |
+          echo "${{ secrets.AWS_ACCESS_KEY_ID }}" | docker login -u AWS --password-stdin 225989376232.dkr.ecr.us-east-1.amazonaws.com
 
       - name: Tag Docker image
-        run: docker tag empapp:latest 225989376232.dkr.ecr.us-east-1.amazonaws.com/empapp/empapp:latest
+        run: |
+          docker tag my-node-app:latest 225989376232.dkr.ecr.us-east-1.amazonaws.com/my-node-app:latest
 
-      - name: Push Docker image to Amazon ECR
-        run: docker push 225989376232.dkr.ecr.us-east-1.amazonaws.com/empapp/empapp:latest
+      - name: Push Docker image to ECR
+        run: |
+          docker push 225989376232.dkr.ecr.us-east-1.amazonaws.com/my-node-app:latest
 
-      - name: Deploy to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          task-definition: .github/workflows/task-definition.json
-          service: TestEmp
-          cluster: EmpDemo
-          wait-for-service-stability: true
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: us-east-1
+      - name: Update ECS Service
+        run: |
+          aws ecs update-service --cluster nodespace --service DepService --force-new-deployment
