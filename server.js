@@ -16,4 +16,4 @@ app.get('/user', (req, res) => {
    return res.json({status:200,msg:"Success",data:userList})
 });
 
-app.listen(port, () => console.log(`Hello world app listening on port ${port}!`));
+app.listen(port, () => console.log(`Hello dude world app listening on port ${port}!`));
